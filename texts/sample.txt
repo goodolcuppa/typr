@@ -1,0 +1,3 @@
+This is a sample typetest. In order to complete it, you must type each character
+correctly in as little time as possible. The program will track your progress as you go
+and provide you with results at the end. The rest of this sample will contain useless information in order to demonstrate the scrolling behaviour of the program. You will see that as each line is completed, the content scrolls so that the current line always remains in the middle, ideally helping to maintain focus in one spot. The test can be completed by using a predefined sample, or by using a specified dictionary of words to be chosen at random.
