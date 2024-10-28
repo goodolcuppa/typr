@@ -2,11 +2,29 @@ import curses
 from curses import wrapper
 import time
 import json
+import sys
+import os
 
-def load_text():
-    with open('texts/sample.txt', 'r') as f:
-        lines = f.readlines()
-        return " ".join([line.strip() for line in lines])
+path = os.path.dirname(os.path.realpath(__file__)) + "/"
+
+def load_text(mode, file):
+    if mode == "text":
+        if file == "default":
+            file = "sample.txt"
+        with open(path + f"texts/{file}", 'r') as f:
+            lines = f.readlines()
+            return " ".join([line.strip() for line in lines])
+    elif mode == "dict":
+        if file == "default":
+            file = "english-50k.txt"
+        with open(path + f"dictionaries/{file}", 'r') as f:
+            lines = f.readlines()
+            return " ".join([line.strip() for line in lines])
+       
+
+def load_config():
+    with open(path + "config.json") as f:
+        return json.load(f)
 
 def main(stdscr):
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
@@ -16,10 +34,16 @@ def main(stdscr):
     curses.init_pair(3, curses.COLOR_RED, curses.COLOR_RED)
     INCORRECT_SPACE = curses.color_pair(3)
 
-    with open("config.json") as f:
-        config = json.load(f)
+    mode = sys.argv[1]
+    file = sys.argv[2]
+    zen_mode = sys.argv[3] == "true"
+    
+    config = load_config()
 
-    target_text = load_text()
+    if zen_mode:
+        config["stat_height"] = 0
+
+    target_text = load_text(mode, file)
     current_text = []
 
     words = len(target_text.split(' '))
@@ -27,11 +51,15 @@ def main(stdscr):
     accuracy = 1
     raw_wpm = 0
     adj_wpm = 0
+    progress = 0
     start_time = time.time()
 
     input_top = config["margin_top"] + config["stat_height"]
 
-    input_pad = curses.newpad(100, config["input_width"] - 2)
+    input_pad = curses.newpad(
+        (len(target_text) // (config["input_width"] - 2)) + 1,
+        config["input_width"] - 2
+    )
 
     input_scroll = 0
     input_offset = 2
@@ -60,6 +88,10 @@ def main(stdscr):
 
     text_width = config["input_width"] - 2
     while True:
+        # hide cursor
+        curses.curs_set(0)
+
+        # display input text
         input_pad.clear()
         input_pad.addstr(target_text, curses.A_DIM)
         input_scroll = len(current_text) // text_width
@@ -78,33 +110,43 @@ def main(stdscr):
         
         # display stats
         accuracy = correct_chars / len(current_text) if correct_chars > 0 else 1
-        acc_text = f"ACC: {int(accuracy*100)}%"
-        stdscr.addstr(
-            config["margin_top"], config["margin_left"],
-            "{:<20}".format(acc_text)
-        )
-
         time_elapsed = max(time.time() - start_time, 1)
-        time_text = f"TIME: {round(time_elapsed)}"
-        stdscr.addstr(
-            config["margin_top"], config["margin_left"] + 60,
-            "{:<20}".format(time_text)
-        )
-
         raw_wpm = (len(current_text) / (time_elapsed / 60)) / 5
-        raw_wpm_text = f"WPM (RAW): {round(raw_wpm)}"
-        stdscr.addstr(
-            config["margin_top"], config["margin_left"] + 20,
-            "{:<20}".format(raw_wpm_text)
-        )
-
         adj_wpm = raw_wpm * accuracy
-        adj_wpm_text = f"WPM (ADJ): {round(adj_wpm)}"
-        stdscr.addstr(
-            config["margin_top"], config["margin_left"] + 40,
-            "{:<20}".format(adj_wpm_text)
-        )
+        progress = len(current_text) / len(target_text)
 
+        if not zen_mode:
+            acc_text = f"ACC: {round(accuracy*100)}%"
+            stdscr.addstr(
+                config["margin_top"], config["margin_left"],
+                "{:<20}".format(acc_text)
+            )
+
+            time_text = f"TIME: {round(time_elapsed)}"
+            stdscr.addstr(
+                config["margin_top"], config["margin_left"] + 60,
+                "{:<20}".format(time_text)
+            )
+
+            progress_text = f"PRG: {round(progress*100)}%"
+            stdscr.addstr(
+                config["margin_top"], config["margin_left"] + 20,
+                "{:<20}".format(progress_text)
+            )
+
+            # raw_wpm_text = f"WPM (RAW): {round(raw_wpm)}"
+            # stdscr.addstr(
+            #     config["margin_top"], config["margin_left"] + 20,
+            #     "{:<20}".format(raw_wpm_text)
+            # )
+
+            adj_wpm_text = f"WPM (ADJ): {round(adj_wpm)}"
+            stdscr.addstr(
+                config["margin_top"], config["margin_left"] + 40,
+                "{:<20}".format(adj_wpm_text)
+            )
+
+        # refresh screen
         stdscr.refresh()
 
         input_pad.refresh(
@@ -116,6 +158,7 @@ def main(stdscr):
             config["margin_left"] + config["input_width"]
         )
 
+        # return results on completion
         if len(current_text) >= len(target_text):
             return {
                 "accuracy": accuracy,
@@ -124,6 +167,10 @@ def main(stdscr):
                 "time_elapsed": time_elapsed
             }
 
+        # show cursor
+        curses.curs_set(1)
+
+        # handle key input
         try:
             key = stdscr.getkey()
         except:
@@ -143,12 +190,8 @@ def main(stdscr):
     
     return
 
-if __name__ == "__main__":    
+if __name__ == "__main__": 
     results = wrapper(main)
     if results:
         for key, value in results.items():
             print(f"{key}: " + "{0:.2f}".format(value))
-    else:
-        print("program cancelled. no data.")
-
-
