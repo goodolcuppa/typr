@@ -3,5 +3,6 @@
     "max_lines": 5,
     "margin_top": 2,
     "margin_left": 4,
-    "input_margin": 1
+    "input_margin": 1,
+    "stat_height": 1
 }
