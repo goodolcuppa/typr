@@ -15,12 +15,16 @@ A file can be specified as an argument when using the command. How this file is 
 # Flags
 
 ```
--d, --dict (default):
+-d, --dictionary (default):
     Use a text file as a dictionary to select words at random.
 -t, --text:
     Use a text file as an extract to type from.
 -z, --zen:
     Enables zen mode, preventing all stats from being displayed and providing a minimal experience.
+-t, --timer [TIMER] (default):
+    Uses a timer if a dictionary is used. A time in seconds can be specified, or defaults to `60`.
+-w, --words [WORDS]:
+    Uses a word count if a dictionary is used. A word count can be specified, or defaults to `100`.
 ```
 
 # Dictionaries

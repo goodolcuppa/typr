@@ -4,8 +4,19 @@ import time
 import json
 import os
 from argparse import ArgumentParser
+import random
 
 path = os.path.dirname(os.path.realpath(__file__))
+
+def parse_args():
+    parser = ArgumentParser()
+    parser.add_argument("file", nargs='?')
+    parser.add_argument("-e", "--extract", action="store_true")
+    parser.add_argument("-d", "--dictionary", action="store_true")
+    parser.add_argument("-z", "--zen", action="store_true")
+    parser.add_argument("-t", "--timer", type=int, nargs='?')
+    parser.add_argument("-w", "--words", type=int, nargs='?', const=100)
+    return parser.parse_args()
 
 def load_text(file):
     with open(file, 'r') as f:
@@ -33,17 +44,25 @@ def main(stdscr, args):
         raw_text = load_text(args.file)
     else:
         if args.extract:
-            raw_text = load_text(path+"/text/sample.txt")
+            raw_text = load_text(path+"/texts/sample.txt")
         else:
             raw_text = load_text(path+"/dictionaries/english-50k.txt")
     
+    # get or generate target_text
+    target_text = ""
     if args.extract:
         target_text = raw_text
     else:
-        target_text = raw_text
+        words = raw_text.split()
+        if args.words:
+            target_text = ' '.join([random.choice(words) for n in range(args.words)])
+        else:
+            if not args.timer:
+                args.timer = 60
+            while len(target_text) // (config["input_width"] - 2) < config["max_lines"]:
+                target_text += random.choice(words) + ' '
     current_text = []
 
-    words = len(target_text.split(' '))
     words_completed = 0
     accuracy = 1
     raw_wpm = 0
@@ -110,7 +129,7 @@ def main(stdscr, args):
         time_elapsed = max(time.time() - start_time, 1)
         raw_wpm = (len(current_text) / (time_elapsed / 60)) / 5
         adj_wpm = raw_wpm * accuracy
-        progress = len(current_text) / len(target_text)
+        progress = len(current_text) / len(target_text) if len(target_text) > 0 else 0
 
         if not args.zen:
             acc_text = f"ACC: {round(accuracy*100)}%"
@@ -119,29 +138,30 @@ def main(stdscr, args):
                 "{:<20}".format(acc_text)
             )
 
-            time_text = f"TIME: {round(time_elapsed)}"
-            stdscr.addstr(
-                config["margin_top"], config["margin_left"] + 60,
-                "{:<20}".format(time_text)
-            )
-
-            progress_text = f"PRG: {round(progress*100)}%"
-            stdscr.addstr(
-                config["margin_top"], config["margin_left"] + 20,
-                "{:<20}".format(progress_text)
-            )
-
-            # raw_wpm_text = f"WPM (RAW): {round(raw_wpm)}"
-            # stdscr.addstr(
-            #     config["margin_top"], config["margin_left"] + 20,
-            #     "{:<20}".format(raw_wpm_text)
-            # )
-
             adj_wpm_text = f"WPM (ADJ): {round(adj_wpm)}"
             stdscr.addstr(
-                config["margin_top"], config["margin_left"] + 40,
+                config["margin_top"], config["margin_left"] + 20,
                 "{:<20}".format(adj_wpm_text)
             )
+
+            raw_wpm_text = f"WPM (RAW): {round(raw_wpm)}"
+            stdscr.addstr(
+                config["margin_top"], config["margin_left"] + 40,
+                "{:<20}".format(raw_wpm_text)
+            )
+
+            if not args.extract and args.timer:
+                time_text = f"TIME: {round(args.timer - time_elapsed)}"
+                stdscr.addstr(
+                    config["margin_top"], config["margin_left"] + 60,
+                    "{:<20}".format(time_text)
+                )
+            else:
+                progress_text = f"PRG: {round(progress*100)}%"
+                stdscr.addstr(
+                    config["margin_top"], config["margin_left"] + 60,
+                    "{:<20}".format(progress_text)
+                )
 
         # refresh screen
         stdscr.refresh()
@@ -156,7 +176,7 @@ def main(stdscr, args):
         )
 
         # return results on completion
-        if len(current_text) >= len(target_text):
+        if len(current_text) >= len(target_text) or (args.timer and time_elapsed > args.timer):
             return {
                 "accuracy": accuracy,
                 "raw_wpm": raw_wpm,
@@ -188,14 +208,7 @@ def main(stdscr, args):
     return
 
 if __name__ == "__main__": 
-    parser = ArgumentParser()
-    parser.add_argument("file", nargs='?')
-    parser.add_argument("-e", "--extract", action="store_true")
-    parser.add_argument("-d", "--dictionary", action="store_true")
-    parser.add_argument("-z", "--zen", action="store_true")
-    args = parser.parse_args()
-
-    results = wrapper(main, args)
+    results = wrapper(main, parse_args())
     if results:
         for key, value in results.items():
             print(f"{key}: " + "{0:.2f}".format(value))
