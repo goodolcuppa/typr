@@ -2,31 +2,21 @@ import curses
 from curses import wrapper
 import time
 import json
-import sys
 import os
+from argparse import ArgumentParser
 
-path = os.path.dirname(os.path.realpath(__file__)) + "/"
+path = os.path.dirname(os.path.realpath(__file__))
 
-def load_text(mode, file):
-    if mode == "text":
-        if file == "default":
-            file = "sample.txt"
-        with open(path + f"texts/{file}", 'r') as f:
-            lines = f.readlines()
-            return " ".join([line.strip() for line in lines])
-    elif mode == "dict":
-        if file == "default":
-            file = "english-50k.txt"
-        with open(path + f"dictionaries/{file}", 'r') as f:
-            lines = f.readlines()
-            return " ".join([line.strip() for line in lines])
-       
+def load_text(file):
+    with open(file, 'r') as f:
+        lines = f.readlines()
+        return " ".join([line.strip() for line in lines])
 
 def load_config():
-    with open(path + "config.json") as f:
+    with open(path + "/config.json") as f:
         return json.load(f)
 
-def main(stdscr):
+def main(stdscr, args):
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
     CORRECT = curses.color_pair(1)
     curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
@@ -34,16 +24,23 @@ def main(stdscr):
     curses.init_pair(3, curses.COLOR_RED, curses.COLOR_RED)
     INCORRECT_SPACE = curses.color_pair(3)
 
-    mode = sys.argv[1]
-    file = sys.argv[2]
-    zen_mode = sys.argv[3] == "true"
-    
     config = load_config()
 
-    if zen_mode:
+    if args.zen:
         config["stat_height"] = 0
 
-    target_text = load_text(mode, file)
+    if args.file:
+        raw_text = load_text(args.file)
+    else:
+        if args.extract:
+            raw_text = load_text(path+"/text/sample.txt")
+        else:
+            raw_text = load_text(path+"/dictionaries/english-50k.txt")
+    
+    if args.extract:
+        target_text = raw_text
+    else:
+        target_text = raw_text
     current_text = []
 
     words = len(target_text.split(' '))
@@ -115,7 +112,7 @@ def main(stdscr):
         adj_wpm = raw_wpm * accuracy
         progress = len(current_text) / len(target_text)
 
-        if not zen_mode:
+        if not args.zen:
             acc_text = f"ACC: {round(accuracy*100)}%"
             stdscr.addstr(
                 config["margin_top"], config["margin_left"],
@@ -191,7 +188,14 @@ def main(stdscr):
     return
 
 if __name__ == "__main__": 
-    results = wrapper(main)
+    parser = ArgumentParser()
+    parser.add_argument("file", nargs='?')
+    parser.add_argument("-e", "--extract", action="store_true")
+    parser.add_argument("-d", "--dictionary", action="store_true")
+    parser.add_argument("-z", "--zen", action="store_true")
+    args = parser.parse_args()
+
+    results = wrapper(main, args)
     if results:
         for key, value in results.items():
             print(f"{key}: " + "{0:.2f}".format(value))

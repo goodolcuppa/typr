@@ -4,17 +4,21 @@ A curses application developed in Python for typing practice and assessing typin
 
 Requires `windows-curses` on Windows.
 
-# Installation
+# Usage
 
-The program can be run using the `typr` command if `source path/to/.typr.sh` has been added to your shell's .rc file. Alternatively, the program can be run using `python main.py <mode ("dict"/"text")> <file (or "default")> <zen_mode true or false>`.
+The program can be run using the `typr` command if `source path/to/.typr.sh` has been added to your shell's .rc file. Alternatively, the program can be run using `python main.py <flags/arguments>`.
+
+# Arguments
+
+A file can be specified as an argument when using the command. How this file is used depends on the flags passed.
 
 # Flags
 
 ```
 -d, --dict (default):
-    Use a text file as a dictionary to select words at random. A specific file in /dictionaries can be specified as an argument, or it can be left blank to use the default.
+    Use a text file as a dictionary to select words at random.
 -t, --text:
-    Use a text file as an extract to type from. A specified file in /texts can be specified as an argument, or it can be left blank to use the default.
+    Use a text file as an extract to type from.
 -z, --zen:
     Enables zen mode, preventing all stats from being displayed and providing a minimal experience.
 ```
