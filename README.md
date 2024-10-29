@@ -17,7 +17,7 @@ A file can be specified as an argument when using the command. How this file is 
 ```
 -d, --dictionary (default):
     Use a text file as a dictionary to select words at random.
--t, --text:
+-e, --extract:
     Use a text file as an extract to type from.
 -z, --zen:
     Enables zen mode, preventing all stats from being displayed and providing a minimal experience.
@@ -39,7 +39,28 @@ Dictionaries are split into individual words and added at random to create a ser
 - Serbian: `serbian-50k.txt`
 - Spanish: `spanish-50k.txt`
 
-# Texts
+# Extracts
 
-Texts are imported directly to be practiced from. There is only one sample text, which can be found in `/texts`, but more can be added.
+Extracts are imported directly to be practiced from. There is only one sample extract, which can be found in `/extracts`, but more can be added.
 
+# Configuration
+
+## Display
+
+- `input_width` (default 80): internal width of the input box.
+- `max_lines` (default 5): internal height of the input box.
+- `margin_top` (default 2): vertical margin before the stats and input box.
+- `margin_left` (default 4): horizontal margin before the input box.
+- `input_margin` (default 1): horizontal margin inside the input box.
+- `stat_height` (default 1): rows reserved to display statistics.
+
+## Defaults
+
+- `default_dictionary` (default $PATH/dictionaries/english-50k.txt):
+    dictionary used when none is specified.
+- `default_extract` (default $PATH/extracts/sample.txt):
+    extract used when none is specified. 
+- `default_timer` (default 60):
+    timer used when none is specified.
+- `default_words` (default 100):
+    word count used whne none is specified.

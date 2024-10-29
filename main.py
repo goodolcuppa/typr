@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument("-d", "--dictionary", action="store_true")
     parser.add_argument("-z", "--zen", action="store_true")
     parser.add_argument("-t", "--timer", type=int, nargs='?')
-    parser.add_argument("-w", "--words", type=int, nargs='?', const=100)
+    parser.add_argument("-w", "--words", type=int, nargs='?', const=-1)
     return parser.parse_args()
 
 def load_text(file):
@@ -44,9 +44,9 @@ def main(stdscr, args):
         raw_text = load_text(args.file)
     else:
         if args.extract:
-            raw_text = load_text(path+"/texts/sample.txt")
+            raw_text = load_text(config["default_extract"].replace("$PATH", path))
         else:
-            raw_text = load_text(path+"/dictionaries/english-50k.txt")
+            raw_text = load_text(config["default_dictionary"].replace("$PATH", path))
     
     # get or generate target_text
     target_text = ""
@@ -55,10 +55,12 @@ def main(stdscr, args):
     else:
         words = raw_text.split()
         if args.words:
+            if args.words == -1:
+                args.words = config["default_words"]
             target_text = ' '.join([random.choice(words) for n in range(args.words)])
         else:
             if not args.timer:
-                args.timer = 60
+                args.timer = config["default_timer"]
             while len(target_text) // (config["input_width"] - 2) < config["max_lines"]:
                 target_text += random.choice(words) + ' '
     current_text = []
@@ -109,6 +111,14 @@ def main(stdscr, args):
 
         # display input text
         input_pad.clear()
+        input_pad.refresh(
+            0, 
+            0, 
+            input_top + 1 + max(0, input_offset - input_scroll), 
+            config["margin_left"] + 2,
+            input_top + config["max_lines"], 
+            config["margin_left"] + config["input_width"]
+        )
         input_pad.addstr(target_text, curses.A_DIM)
         input_scroll = len(current_text) // text_width
 
