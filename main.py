@@ -23,9 +23,35 @@ def load_text(file):
         lines = f.readlines()
         return " ".join([line.strip() for line in lines])
 
+def load_raw_text(args, config):
+    if args.file:
+        return load_text(args.file)
+    else:
+        if args.extract:
+            return load_text(config["default_extract"].replace("$PATH", path))
+        else:
+            return load_text(config["default_dictionary"].replace("$PATH", path))
+
 def load_config():
     with open(path + "/config.json") as f:
         return json.load(f)
+
+def is_escape(key):
+    try:
+        if ord(key) == 27:
+            return True
+    except:
+        pass
+    return False
+
+def is_backspace(key):
+    if key in ("KEY_BACKSPACE", "\b", "\x7f"):
+        return True
+    return False
+
+def display_results(results):
+    for key, value in results.items():
+        print(f"{key}: " + "{0:.2f}".format(value))
 
 def main(stdscr, args):
     curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
@@ -41,14 +67,8 @@ def main(stdscr, args):
     if args.zen:
         config["stat_height"] = 0
 
-    if args.file:
-        raw_text = load_text(args.file)
-    else:
-        if args.extract:
-            raw_text = load_text(config["default_extract"].replace("$PATH", path))
-        else:
-            raw_text = load_text(config["default_dictionary"].replace("$PATH", path))
-    
+    raw_text = load_raw_text(args, config)
+        
     # get or generate target_text
     target_text = ""
     if args.extract:
@@ -66,6 +86,7 @@ def main(stdscr, args):
                 target_text += random.choice(words) + ' '
     current_text = []
 
+    # stats
     words_completed = 0
     accuracy = 1
     raw_wpm = 0
@@ -73,6 +94,7 @@ def main(stdscr, args):
     progress = 0
     start_time = time.time()
 
+    # input state
     input_top = config["margin_top"] + config["stat_height"]
 
     input_pad = curses.newpad(
@@ -85,6 +107,7 @@ def main(stdscr, args):
 
     stdscr.clear()
 
+    # display border
     if config["border"]:
         stdscr.addstr(
             input_top, config["margin_left"],
@@ -99,13 +122,14 @@ def main(stdscr, args):
             input_top + config["max_lines"] + 1, config["margin_left"],
             '╰' + ('─'*config["input_width"]) + '╯'
         )
-
+    
+    # display line indicator
     if config["line_indicator"]:
         middle_line = input_top + 1 + (config["max_lines"] // 2)
         stdscr.addstr(middle_line, config["margin_left"] + 1, '>')
         stdscr.addstr(middle_line, config["margin_left"] + config["input_width"], '<')
 
-    
+    # main loop 
     while True:
         # hide cursor
         curses.curs_set(0)
@@ -204,13 +228,10 @@ def main(stdscr, args):
         except:
             continue
         
-        try:
-            if ord(key) == 27:
-                break
-        except:
-            pass
+        if is_escape(key):
+            break
 
-        if key in ("KEY_BACKSPACE", "\b", "\x7f"):
+        if is_backspace(key):
             if len(current_text) > 0:
                 current_text.pop()
         elif len(current_text) < len(target_text):
@@ -221,5 +242,4 @@ def main(stdscr, args):
 if __name__ == "__main__": 
     results = wrapper(main, parse_args())
     if results:
-        for key, value in results.items():
-            print(f"{key}: " + "{0:.2f}".format(value))
+        display_results(results)    
