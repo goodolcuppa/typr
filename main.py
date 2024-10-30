@@ -36,6 +36,7 @@ def main(stdscr, args):
     INCORRECT_SPACE = curses.color_pair(3)
 
     config = load_config()
+    text_width = config["input_width"] - 2
 
     if args.zen:
         config["stat_height"] = 0
@@ -61,7 +62,7 @@ def main(stdscr, args):
         else:
             if not args.timer:
                 args.timer = config["default_timer"]
-            while len(target_text) // (config["input_width"] - 2) < config["max_lines"]:
+            while len(target_text) // text_width < config["max_lines"]:
                 target_text += random.choice(words) + ' '
     current_text = []
 
@@ -75,8 +76,8 @@ def main(stdscr, args):
     input_top = config["margin_top"] + config["stat_height"]
 
     input_pad = curses.newpad(
-        (len(target_text) // (config["input_width"] - 2)) + 1,
-        config["input_width"] - 2
+        (len(target_text) // text_width) + 1,
+        text_width 
     )
 
     input_scroll = 0
@@ -84,27 +85,27 @@ def main(stdscr, args):
 
     stdscr.clear()
 
-    stdscr.addstr(
-        input_top, config["margin_left"],
-        '╭' + ('─'*config["input_width"]) + '╮'
-    )
-    for i in range(config["max_lines"]):
-        if i == config["max_lines"] // 2:
-            stdscr.addstr(input_top + 1 + i, config["margin_left"], '│>')
-            stdscr.addstr(
-                input_top + 1 + i, config["margin_left"] + config["input_width"], '<│'
-            )
-        else:
+    if config["border"]:
+        stdscr.addstr(
+            input_top, config["margin_left"],
+            '╭' + ('─'*config["input_width"]) + '╮'
+        )
+        for i in range(config["max_lines"]):
             stdscr.addstr(input_top + 1 + i, config["margin_left"], '│')
             stdscr.addstr(
                 input_top + 1 + i, config["margin_left"] + config["input_width"] + 1, '│'
             )
-    stdscr.addstr(
-        input_top + config["max_lines"] + 1, config["margin_left"],
-        '╰' + ('─'*config["input_width"]) + '╯'
-    )
+        stdscr.addstr(
+            input_top + config["max_lines"] + 1, config["margin_left"],
+            '╰' + ('─'*config["input_width"]) + '╯'
+        )
 
-    text_width = config["input_width"] - 2
+    if config["line_indicator"]:
+        middle_line = input_top + 1 + (config["max_lines"] // 2)
+        stdscr.addstr(middle_line, config["margin_left"] + 1, '>')
+        stdscr.addstr(middle_line, config["margin_left"] + config["input_width"], '<')
+
+    
     while True:
         # hide cursor
         curses.curs_set(0)

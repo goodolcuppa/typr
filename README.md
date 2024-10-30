@@ -53,6 +53,8 @@ Extracts are imported directly to be practiced from. There is only one sample ex
 - `margin_left` (default 4): horizontal margin before the input box.
 - `input_margin` (default 1): horizontal margin inside the input box.
 - `stat_height` (default 1): rows reserved to display statistics.
+- `border` (default false): whether a border is drawn around the input box.
+- `line_indicator` (default false): whether a line indicator is rendered.
 
 ## Defaults
 
