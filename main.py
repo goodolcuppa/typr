@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument("-d", "--dictionary", action="store_true")
     parser.add_argument("-z", "--zen", action="store_true")
     parser.add_argument("-t", "--timer", type=int, nargs='?')
-    parser.add_argument("-w", "--words", type=int, nargs='?', const=-1)
+    parser.add_argument("-w", "--words", type=int, nargs='?', const=-1, default=None)
     return parser.parse_args()
 
 def load_text(file):
@@ -35,6 +35,21 @@ def load_raw_text(args, config):
 def load_config():
     with open(path + "/config.json") as f:
         return json.load(f)
+
+def generate_lines(words, length, count):
+    lines = []
+    line = ""
+    while len(lines) < count:
+        if len(line) >= length:
+            lines.append(line)
+            line = ""
+        word = random.choice(words)
+        if len(line) + len(word) <= length:
+            line += word + ' '
+        else:
+            lines.append(line)
+            line = ""
+    return lines
 
 def is_escape(key):
     try:
@@ -68,26 +83,54 @@ def main(stdscr, args):
         config["stat_height"] = 0
 
     raw_text = load_raw_text(args, config)
+    raw_words = raw_text.split(' ')
         
-    # get or generate target_text
-    target_text = ""
+    # generate lines
+    lines = []
+    line_index = 0
     if args.extract:
-        target_text = raw_text
+        line = ""
+        word_index = 0
+        while word_index < len(raw_words):
+            if len(line) >= text_width:
+                lines.append(line)
+                line = ""
+            word = raw_words[word_index]
+            if len(line) + len(word) <= text_width:
+                line += word + ' '
+                word_index += 1
+            else:
+                lines.append(line)
+                line = ""
+        if line:
+            lines.append(line)
     else:
-        words = raw_text.split()
         if args.words:
             if args.words == -1:
                 args.words = config["default_words"]
-            target_text = ' '.join([random.choice(words) for n in range(args.words)])
+            line = ""
+            word_count = 0
+            while word_count < args.words:
+                if len(line) >= text_width:
+                    lines.append(line)
+                    line = ""
+                word = random.choice(raw_words)
+                if len(line) + len(word) <= text_width:
+                    line += word + ' '
+                    word_count += 1
+                else:
+                    lines.append(line)
+                    line = ""
+            if line:
+                lines.append(line)
         else:
-            if not args.timer:
-                args.timer = config["default_timer"]
-            while len(target_text) // text_width < config["max_lines"]:
-                target_text += random.choice(words) + ' '
-    current_text = []
+            args.timer = config["default_timer"]
+            lines = generate_lines(raw_words, text_width, config["max_lines"])
+    # remove trailing space
+    lines[-1] = lines[-1][:-1]
+    current_text = [[]]
 
     # stats
-    words_completed = 0
     accuracy = 1
     raw_wpm = 0
     adj_wpm = 0
@@ -96,13 +139,6 @@ def main(stdscr, args):
 
     # input state
     input_top = config["margin_top"] + config["stat_height"]
-
-    input_pad = curses.newpad(
-        (len(target_text) // text_width) + 1,
-        text_width 
-    )
-
-    input_scroll = 0
     input_offset = 2
 
     stdscr.clear()
@@ -123,48 +159,52 @@ def main(stdscr, args):
             '╰' + ('─'*config["input_width"]) + '╯'
         )
     
-    # display line indicator
-    if config["line_indicator"]:
-        middle_line = input_top + 1 + (config["max_lines"] // 2)
-        stdscr.addstr(middle_line, config["margin_left"] + 1, '>')
-        stdscr.addstr(middle_line, config["margin_left"] + config["input_width"], '<')
-
+    
     # main loop 
     while True:
         # hide cursor
         curses.curs_set(0)
+        stdscr.clear()
 
-        # display input text
-        input_pad.clear()
-        input_pad.refresh(
-            0, 
-            0, 
-            input_top + 1 + max(0, input_offset - input_scroll), 
-            config["margin_left"] + 2,
-            input_top + config["max_lines"], 
-            config["margin_left"] + config["input_width"]
-        )
-        input_pad.addstr(target_text, curses.A_DIM)
-        input_scroll = len(current_text) // text_width
+        middle_line = config["max_lines"] // 2
+        indicated_line = input_top + 1 + min(line_index, middle_line)
 
+        start_line = 0 if line_index < middle_line else line_index - middle_line
+        end_line = start_line + config["max_lines"]
+        for y, line in enumerate(lines[start_line:end_line]):
+            stdscr.addstr(input_top + 1 + y, config["margin_left"] + 2, line, curses.A_DIM)
+            if (start_line + y) < len(current_text):
+                for x, c in enumerate(current_text[start_line + y]):
+                    if c == line[x]:
+                        color = CORRECT
+                    elif line[x] == ' ':
+                        color = INCORRECT_SPACE
+                    else:
+                        color = INCORRECT
+                    stdscr.addstr(input_top + 1 + y, config["margin_left"] + 2 + x, line[x], color)
+
+        # calculate correct characters
         correct_chars = 0
-        for i, c in enumerate(current_text):
-            correct_char = target_text[i]
-            if c == correct_char:
-                color = CORRECT
-                correct_chars += 1
-            else:
-                color = INCORRECT
-            if correct_char == ' ' and c != correct_char:
-                color = INCORRECT_SPACE
-            input_pad.addstr(i // text_width, i % text_width, correct_char, color)
-        
+        for y, line in enumerate(lines):
+            if y < len(current_text):
+                for x, c in enumerate(current_text[y]):
+                    if c == line[x]:
+                        correct_chars += 1
+
+        # display line indicator
+        if config["line_indicator"]:
+            stdscr.addstr(indicated_line, config["margin_left"] + 1, '>')
+            stdscr.addstr(indicated_line, config["margin_left"] + config["input_width"], '<')
+
+
         # display stats
-        accuracy = correct_chars / len(current_text) if correct_chars > 0 else 1
+        text_length = sum(len(line) for line in lines)
+        current_length = sum(len(line) for line in current_text)
+        accuracy = correct_chars / current_length if current_length > 0 else 1
         time_elapsed = max(time.time() - start_time, 1)
-        raw_wpm = (len(current_text) / (time_elapsed / 60)) / 5
+        raw_wpm = (current_length / (time_elapsed / 60)) / 5
         adj_wpm = raw_wpm * accuracy
-        progress = len(current_text) / len(target_text) if len(target_text) > 0 else 0
+        progress = current_length / text_length if text_length > 0 else 0
 
         if not args.zen:
             acc_text = f"ACC: {round(accuracy*100)}%"
@@ -201,26 +241,22 @@ def main(stdscr, args):
         # refresh screen
         stdscr.refresh()
 
-        input_pad.refresh(
-            max(0, input_scroll - input_offset), 
-            0, 
-            input_top + 1 + max(0, input_offset - input_scroll), 
-            config["margin_left"] + 2,
-            input_top + config["max_lines"], 
-            config["margin_left"] + config["input_width"]
-        )
-
         # return results on completion
-        if len(current_text) >= len(target_text) or (args.timer and time_elapsed > args.timer):
+        if current_length >= text_length or (args.timer and time_elapsed > args.timer):
             return {
                 "accuracy": accuracy,
                 "raw_wpm": raw_wpm,
                 "adj_wpm": adj_wpm,
                 "time_elapsed": time_elapsed
             }
-
+        
         # show cursor
         curses.curs_set(1)
+
+        stdscr.move(
+            indicated_line,
+            config["margin_left"] + 2 + len(current_text[line_index])
+        )
 
         # handle key input
         try:
@@ -232,10 +268,22 @@ def main(stdscr, args):
             break
 
         if is_backspace(key):
-            if len(current_text) > 0:
+            if len(current_text[line_index]) > 0:
+                current_text[line_index].pop()
+            elif line_index > 0:
                 current_text.pop()
-        elif len(current_text) < len(target_text):
-            current_text.append(key)
+                line_index -= 1
+                current_text[line_index].pop()
+        # if space is available on the current line
+        elif len(current_text[line_index]) < len(lines[line_index]) - 1:
+            current_text[line_index].append(key)
+        # if no space is available on the current line
+        else:
+            current_text[line_index].append(key)
+            current_text.append([])
+            line_index += 1
+            if args.timer:
+                lines += generate_lines(raw_words, text_width, 1)
     
     return
 
