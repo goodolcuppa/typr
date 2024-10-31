@@ -12,10 +12,10 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("file", nargs='?')
     parser.add_argument("-e", "--extract", action="store_true")
-    parser.add_argument("-d", "--dictionary", action="store_true")
+    parser.add_argument("-d", "--dictionary", type=int, nargs='?', const=-1)
     parser.add_argument("-z", "--zen", action="store_true")
     parser.add_argument("-t", "--timer", type=int, nargs='?')
-    parser.add_argument("-w", "--words", type=int, nargs='?', const=-1, default=None)
+    parser.add_argument("-w", "--words", type=int, nargs='?', const=-1)
     return parser.parse_args()
 
 def load_text(file):
@@ -83,7 +83,10 @@ def main(stdscr, args):
         config["stat_height"] = 0
 
     raw_text = load_raw_text(args, config)
-    raw_words = raw_text.split(' ')
+    top_words = config["default_top_words"]
+    if args.dictionary and args.dictionary > 0:
+        top_words = args.dictionary
+    raw_words = raw_text.split(' ')[:top_words]
         
     # generate lines
     lines = []

@@ -15,8 +15,8 @@ A file can be specified as an argument when using the command. How this file is 
 # Flags
 
 ```
--d, --dictionary (default):
-    Use a text file as a dictionary to select words at random.
+-d, --dictionary [TOP_WORDS] (default):
+    Use a text file as a dictionary to select words at random. A parameter can be specified to override the top `n` words used from the dictionary.
 -e, --extract:
     Use a text file as an extract to type from.
 -z, --zen:
@@ -65,4 +65,6 @@ Extracts are imported directly to be practiced from. There is only one sample ex
 - `default_timer` (default 60):
     timer used when none is specified.
 - `default_words` (default 100):
-    word count used whne none is specified.
+    word count used when none is specified.
+- `default_top_words` (default 1000):
+    top `n` words to use when none is specified.

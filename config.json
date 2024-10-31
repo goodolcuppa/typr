@@ -10,6 +10,7 @@
     "default_dictionary": "$PATH/dictionaries/english-50k.txt",
     "default_extract": "$PATH/extracts/sample.txt",
     "default_timer": 60,
-    "default_words": 100
+    "default_words": 100,
+    "default_top_words": 1000
 }
 
