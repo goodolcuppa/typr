@@ -146,7 +146,7 @@ def main(stdscr, args):
     # remove trailing space
     if not args.timer:
         lines[-1] = lines[-1][:-1]
-        current_text = [[]]
+    current_text = [[]]
 
     # stats
     accuracy = 1
