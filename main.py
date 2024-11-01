@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument("-e", "--extract", action="store_true")
     parser.add_argument("-d", "--dictionary", type=int, nargs='?', const=-1)
     parser.add_argument("-z", "--zen", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
     parser.add_argument("-t", "--timer", type=int, nargs='?')
     parser.add_argument("-w", "--words", type=int, nargs='?', const=-1)
     return parser.parse_args()
@@ -143,8 +144,9 @@ def main(stdscr, args):
             lines = get_dictionary_lines(raw_words, text_width, config["max_lines"])
 
     # remove trailing space
-    lines[-1] = lines[-1][:-1]
-    current_text = [[]]
+    if not args.timer:
+        lines[-1] = lines[-1][:-1]
+        current_text = [[]]
 
     # stats
     accuracy = 1
@@ -154,7 +156,16 @@ def main(stdscr, args):
     start_time = time.time()
 
     # input state
-    input_top = config["margin_top"] + config["stat_height"]
+    if config["vertical_align"] == "center":
+        input_top = curses.LINES // 2 - config["max_lines"] // 2
+        stat_top = input_top - config["stat_height"]
+    elif config["vertical_align"] == "bottom":
+        input_top = curses.LINES - config["vertical_margin"] - config["max_lines"] - 2
+        stat_top = input_top - config["stat_height"]
+    # if "top" or invalid input
+    else:
+        input_top = config["vertical_margin"] + config["stat_height"]
+        stat_top = config["vertical_margin"]
     input_offset = 2
 
     # main loop 
@@ -221,32 +232,32 @@ def main(stdscr, args):
         if not args.zen:
             acc_text = f"ACC: {round(accuracy*100)}%"
             stdscr.addstr(
-                config["margin_top"], config["margin_left"],
+                stat_top, config["margin_left"],
                 "{:<20}".format(acc_text)
             )
 
             adj_wpm_text = f"WPM (ADJ): {round(adj_wpm)}"
             stdscr.addstr(
-                config["margin_top"], config["margin_left"] + 20,
+                stat_top, config["margin_left"] + 20,
                 "{:<20}".format(adj_wpm_text)
             )
 
             raw_wpm_text = f"WPM (RAW): {round(raw_wpm)}"
             stdscr.addstr(
-                config["margin_top"], config["margin_left"] + 40,
+                stat_top, config["margin_left"] + 40,
                 "{:<20}".format(raw_wpm_text)
             )
 
             if not args.extract and args.timer:
                 time_text = f"TIME: {round(args.timer - time_elapsed)}"
                 stdscr.addstr(
-                    config["margin_top"], config["margin_left"] + 60,
+                    stat_top, config["margin_left"] + 60,
                     "{:<20}".format(time_text)
                 )
             else:
                 progress_text = f"PRG: {round(progress*100)}%"
                 stdscr.addstr(
-                    config["margin_top"], config["margin_left"] + 60,
+                    stat_top, config["margin_left"] + 60,
                     "{:<20}".format(progress_text)
                 )
 

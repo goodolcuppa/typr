@@ -49,10 +49,11 @@ Extracts are imported directly to be practiced from. There is only one sample ex
 
 - `input_width` (default 80): internal width of the input box.
 - `max_lines` (default 5): internal height of the input box.
-- `margin_top` (default 2): vertical margin before the stats and input box.
+- `vertical_margin` (default 2): vertical margin before the stats and input box when vertical_align is "top", or after when vertical_align is "bottom".
 - `margin_left` (default 4): horizontal margin before the input box.
 - `input_margin` (default 1): horizontal margin inside the input box.
 - `stat_height` (default 1): rows reserved to display statistics.
+- `vertical_align` (default "center"): align content vertically to "top", "center", or "bottom".
 - `border` (default false): whether a border is drawn around the input box.
 - `line_indicator` (default false): whether a line indicator is rendered.
 

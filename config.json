@@ -1,10 +1,11 @@
 {
     "input_width": 80,
     "max_lines": 3,
-    "margin_top": 2,
+    "vertical_margin": 2,
     "margin_left": 4,
     "input_margin": 1,
     "stat_height": 1,
+    "vertical_align": "center",
     "border": false,
     "line_indicator": false,
     "default_dictionary": "$PATH/dictionaries/english-50k.txt",
