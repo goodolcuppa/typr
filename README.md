@@ -20,7 +20,9 @@ A file can be specified as an argument when using the command. How this file is 
 -e, --extract:
     Use a text file as an extract to type from.
 -z, --zen:
-    Enables zen mode, preventing all stats from being displayed and providing a minimal experience.
+    Enables zen mode, preventing all stats from being displayed and providing a minimal experience. This overrides the `default_zen` value in the configuration file.
+-v, --verbose:
+    Disables zen mode, displaying stats. This overrides the `default_zen` value in the configuration file.
 -t, --timer [TIMER] (default):
     Uses a timer if a dictionary is used. A time in seconds can be specified, or defaults to `60`.
 -w, --words [WORDS]:
@@ -69,3 +71,5 @@ Extracts are imported directly to be practiced from. There is only one sample ex
     word count used when none is specified.
 - `default_top_words` (default 1000):
     top `n` words to use when none is specified.
+- `default_zen` (default false):
+    the default zen setting when non is specified.

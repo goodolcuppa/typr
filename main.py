@@ -117,12 +117,20 @@ def main(stdscr, args):
     curses.init_pair(3, curses.COLOR_RED, curses.COLOR_RED)
     INCORRECT_SPACE = curses.color_pair(3)
 
+    # config
     config = load_config()
     text_width = config["input_width"] - 2
-
     if args.zen:
         config["stat_height"] = 0
 
+    # args
+    if not args.zen:
+        if args.verbose:
+            args.zen = False
+        else:
+            args.zen = config["default_zen"]
+
+    # load text
     raw_text = load_raw_text(args, config)
     top_words = config["default_top_words"]
     if args.dictionary and args.dictionary > 0:
@@ -154,6 +162,8 @@ def main(stdscr, args):
     adj_wpm = 0
     progress = 0
     start_time = time.time()
+    stat_width = text_width // 4
+    stat_left = config["margin_left"] + config["input_margin"] + 1
 
     # input state
     if config["vertical_align"] == "center":
@@ -232,33 +242,33 @@ def main(stdscr, args):
         if not args.zen:
             acc_text = f"ACC: {round(accuracy*100)}%"
             stdscr.addstr(
-                stat_top, config["margin_left"],
-                "{:<20}".format(acc_text)
+                stat_top, stat_left,
+                acc_text.ljust(stat_width)
             )
 
             adj_wpm_text = f"WPM (ADJ): {round(adj_wpm)}"
             stdscr.addstr(
-                stat_top, config["margin_left"] + 20,
-                "{:<20}".format(adj_wpm_text)
+                stat_top, stat_left + stat_width,
+                adj_wpm_text.ljust(stat_width)
             )
 
             raw_wpm_text = f"WPM (RAW): {round(raw_wpm)}"
             stdscr.addstr(
-                stat_top, config["margin_left"] + 40,
-                "{:<20}".format(raw_wpm_text)
+                stat_top, stat_left + (2*stat_width),
+                raw_wpm_text.ljust(stat_width)
             )
 
             if not args.extract and args.timer:
                 time_text = f"TIME: {round(args.timer - time_elapsed)}"
                 stdscr.addstr(
-                    stat_top, config["margin_left"] + 60,
-                    "{:<20}".format(time_text)
+                    stat_top, stat_left + (3*stat_width),
+                    time_text.ljust(stat_width)
                 )
             else:
                 progress_text = f"PRG: {round(progress*100)}%"
                 stdscr.addstr(
-                    stat_top, config["margin_left"] + 60,
-                    "{:<20}".format(progress_text)
+                    stat_top, stat_left + (3*stat_width),
+                    progress_text.ljust(stat_width)
                 )
 
         # refresh screen
@@ -310,7 +320,8 @@ def main(stdscr, args):
     
     return
 
-if __name__ == "__main__": 
-    results = wrapper(main, parse_args())
+if __name__ == "__main__":
+    args = parse_args()
+    results = wrapper(main, args)
     if results:
         display_results(results)    
