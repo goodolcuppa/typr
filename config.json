@@ -6,7 +6,7 @@
     "input_margin": 1,
     "stat_height": 1,
     "border": false,
-    "line_indicator": true,
+    "line_indicator": false,
     "default_dictionary": "$PATH/dictionaries/english-50k.txt",
     "default_extract": "$PATH/extracts/sample.txt",
     "default_timer": 60,

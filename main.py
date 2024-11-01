@@ -6,7 +6,7 @@ import os
 from argparse import ArgumentParser
 import random
 
-path = os.path.dirname(os.path.realpath(__file__))
+PATH = os.path.dirname(os.path.realpath(__file__))
 
 def parse_args():
     parser = ArgumentParser()
@@ -28,18 +28,18 @@ def load_raw_text(args, config):
         return load_text(args.file)
     else:
         if args.extract:
-            return load_text(config["default_extract"].replace("$PATH", path))
+            return load_text(config["default_extract"].replace("$PATH", PATH))
         else:
-            return load_text(config["default_dictionary"].replace("$PATH", path))
+            return load_text(config["default_dictionary"].replace("$PATH", PATH))
 
 def load_config():
-    with open(path + "/config.json") as f:
+    with open(PATH + "/config.json") as f:
         return json.load(f)
 
-def generate_lines(words, length, count):
+def get_dictionary_lines(words, length, line_count):
     lines = []
     line = ""
-    while len(lines) < count:
+    while len(lines) < line_count:
         if len(line) >= length:
             lines.append(line)
             line = ""
@@ -50,6 +50,46 @@ def generate_lines(words, length, count):
             lines.append(line)
             line = ""
     return lines
+
+def get_word_count_lines(words, length, word_count):
+    lines = []
+    line = ""
+    current_count = 0
+    while current_count < word_count:
+        if len(line) >= length:
+            lines.append(line)
+            line = ""
+        word = random.choice(words)
+        if len(line) + len(word) <= length:
+            line += word + ' '
+            current_count += 1
+        else:
+            lines.append(line)
+            line = ""
+    if line:
+        lines.append(line)
+    return lines
+
+    
+def get_extract_lines(text, length):
+    lines = []
+    line = ""
+    word_index = 0
+    while word_index < len(text):
+        if len(line) >= length:
+            lines.append(line)
+            line = ""
+        word = text[word_index]
+        if len(line) + len(word) <= length:
+            line += word + ' '
+            word_index += 1
+        else:
+            lines.append(line)
+            line = ""
+    if line:
+        lines.append(line)
+    return lines
+
 
 def is_escape(key):
     try:
@@ -92,43 +132,16 @@ def main(stdscr, args):
     lines = []
     line_index = 0
     if args.extract:
-        line = ""
-        word_index = 0
-        while word_index < len(raw_words):
-            if len(line) >= text_width:
-                lines.append(line)
-                line = ""
-            word = raw_words[word_index]
-            if len(line) + len(word) <= text_width:
-                line += word + ' '
-                word_index += 1
-            else:
-                lines.append(line)
-                line = ""
-        if line:
-            lines.append(line)
+        lines = get_extract_lines(raw_words, text_width)
     else:
         if args.words:
             if args.words == -1:
                 args.words = config["default_words"]
-            line = ""
-            word_count = 0
-            while word_count < args.words:
-                if len(line) >= text_width:
-                    lines.append(line)
-                    line = ""
-                word = random.choice(raw_words)
-                if len(line) + len(word) <= text_width:
-                    line += word + ' '
-                    word_count += 1
-                else:
-                    lines.append(line)
-                    line = ""
-            if line:
-                lines.append(line)
+            lines = get_word_count_lines(raw_words, text_width, args.words)
         else:
             args.timer = config["default_timer"]
-            lines = generate_lines(raw_words, text_width, config["max_lines"])
+            lines = get_dictionary_lines(raw_words, text_width, config["max_lines"])
+
     # remove trailing space
     lines[-1] = lines[-1][:-1]
     current_text = [[]]
@@ -144,25 +157,6 @@ def main(stdscr, args):
     input_top = config["margin_top"] + config["stat_height"]
     input_offset = 2
 
-    stdscr.clear()
-
-    # display border
-    if config["border"]:
-        stdscr.addstr(
-            input_top, config["margin_left"],
-            '╭' + ('─'*config["input_width"]) + '╮'
-        )
-        for i in range(config["max_lines"]):
-            stdscr.addstr(input_top + 1 + i, config["margin_left"], '│')
-            stdscr.addstr(
-                input_top + 1 + i, config["margin_left"] + config["input_width"] + 1, '│'
-            )
-        stdscr.addstr(
-            input_top + config["max_lines"] + 1, config["margin_left"],
-            '╰' + ('─'*config["input_width"]) + '╯'
-        )
-    
-    
     # main loop 
     while True:
         # hide cursor
@@ -199,6 +193,21 @@ def main(stdscr, args):
             stdscr.addstr(indicated_line, config["margin_left"] + 1, '>')
             stdscr.addstr(indicated_line, config["margin_left"] + config["input_width"], '<')
 
+        # display border
+        if config["border"]:
+            stdscr.addstr(
+                input_top, config["margin_left"],
+                '╭' + ('─'*config["input_width"]) + '╮'
+            )
+            for i in range(config["max_lines"]):
+                stdscr.addstr(input_top + 1 + i, config["margin_left"], '│')
+                stdscr.addstr(
+                    input_top + 1 + i, config["margin_left"] + config["input_width"] + 1, '│'
+                )
+            stdscr.addstr(
+                input_top + config["max_lines"] + 1, config["margin_left"],
+                '╰' + ('─'*config["input_width"]) + '╯'
+            )
 
         # display stats
         text_length = sum(len(line) for line in lines)
@@ -286,7 +295,7 @@ def main(stdscr, args):
             current_text.append([])
             line_index += 1
             if args.timer:
-                lines += generate_lines(raw_words, text_width, 1)
+                lines += get_dictionary_lines(raw_words, text_width, 1)
     
     return
 
